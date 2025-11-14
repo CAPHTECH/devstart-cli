@@ -1,0 +1,52 @@
+export type IssueTarget = {
+  kind: "issue";
+  branch: string;
+  worktreePath: string;
+  baseRef: string;
+};
+
+export type PrTarget = {
+  kind: "pr";
+  branch: string;
+  worktreePath: string;
+  number: string;
+  isCrossRepository: boolean;
+};
+
+export type WorktreeTarget = IssueTarget | PrTarget;
+
+export type WorktreeInfo = {
+  path: string;
+  branch: string | null;
+};
+
+export type EditorCommand = "code" | "cursor";
+export type RunnerCommand = "codex" | "claude";
+export type ListType = "issues" | "prs";
+
+export type CliMode =
+  | { kind: "ticket"; ticket: string }
+  | { kind: "issues" }
+  | { kind: "prs" };
+
+export type CliOptions = {
+  mode: CliMode;
+  openers: EditorCommand[];
+  runners: RunnerCommand[];
+};
+
+export type RepoInfo = {
+  owner: string;
+  name: string;
+};
+
+export type ListItem = {
+  number: number;
+  title: string;
+};
+
+export type ListPage = {
+  items: ListItem[];
+  hasNext: boolean;
+  nextCursor: string | null;
+};
