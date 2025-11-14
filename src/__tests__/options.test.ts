@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { HelpRequested, parseArgs } from "../options.js";
 
 describe("parseArgs", () => {
-  it("parses ticket number with default opener", () => {
+  it("parses ticket number without implicit opener", () => {
     const result = parseArgs(["123"]);
     expect(result.mode).toEqual({ kind: "ticket", ticket: "123" });
-    expect(result.openers).toEqual(["code"]);
+    expect(result.openers).toEqual([]);
     expect(result.runners).toEqual([]);
     expect(result.inPlace).toBe(false);
   });
@@ -16,6 +16,34 @@ describe("parseArgs", () => {
     expect(result.mode).toEqual({ kind: "issues" });
     expect(result.openers).toEqual(["cursor"]);
     expect(result.inPlace).toBe(false);
+  });
+
+  it("enables codex runner and accumulates args", () => {
+    const result = parseArgs([
+      "--codex-arg",
+      "--model=gpt",
+      "--codex=--max-tokens=2000",
+      "--claude",
+      "--claude-arg",
+      "--temperature=0.2",
+      "123",
+    ]);
+
+    expect(result.runners).toEqual([
+      { command: "codex", args: ["--model=gpt", "--max-tokens=2000"] },
+      { command: "claude", args: ["--temperature=0.2"] },
+    ]);
+  });
+
+  it("accepts inline claude argument", () => {
+    const result = parseArgs(["--claude=--model=opus", "issues"]);
+    expect(result.runners).toEqual([{ command: "claude", args: ["--model=opus"] }]);
+  });
+
+  it("throws when runner arg is missing a value", () => {
+    expect(() => parseArgs(["--codex-arg"])).toThrowError(/--codex-arg/);
+    expect(() => parseArgs(["--codex="])).toThrowError(/--codex=/);
+    expect(() => parseArgs(["--claude="])).toThrowError(/--claude=/);
   });
 
   it("sets in-place flag", () => {

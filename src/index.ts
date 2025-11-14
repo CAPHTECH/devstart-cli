@@ -32,30 +32,40 @@ void main().catch((error) => {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const repoRoot = runCommand("git", ["rev-parse", "--show-toplevel"]);
-  const repoName = path.basename(repoRoot);
-  const worktreesRoot = path.resolve(repoRoot, "..", `${repoName}.worktrees`);
-  const repoInfo = getRepoInfo();
+  const initialCwd = process.cwd();
 
-  const ticket = await resolveTicketFromMode(options.mode, repoInfo);
-  if (!ticket) {
-    console.log("No selection made. Abort.");
-    return;
+  try {
+    const repoRoot = resolveRepoRoot(initialCwd);
+    if (path.resolve(process.cwd()) !== path.resolve(repoRoot)) {
+      process.chdir(repoRoot);
+    }
+
+    const repoName = path.basename(repoRoot);
+    const worktreesRoot = path.resolve(repoRoot, "..", `${repoName}.worktrees`);
+    const repoInfo = getRepoInfo();
+
+    const ticket = await resolveTicketFromMode(options.mode, repoInfo);
+    if (!ticket) {
+      console.log("No selection made. Abort.");
+      return;
+    }
+
+    const target = resolveTarget(ticket, worktreesRoot);
+    if (options.inPlace) {
+      ensureBranchInPlace(target);
+      openWorktree(options.openers, repoRoot);
+      runRunners(options.runners, repoRoot);
+      return;
+    }
+
+    ensureParentDirectory(target.worktreePath);
+    ensureWorktreeReady(target);
+
+    openWorktree(options.openers, target.worktreePath);
+    runRunners(options.runners, target.worktreePath);
+  } finally {
+    process.chdir(initialCwd);
   }
-
-  const target = resolveTarget(ticket, worktreesRoot);
-  if (options.inPlace) {
-    ensureBranchInPlace(target);
-    openWorktree(options.openers, repoRoot);
-    runRunners(options.runners, repoRoot);
-    return;
-  }
-
-  ensureParentDirectory(target.worktreePath);
-  ensureWorktreeReady(target);
-
-  openWorktree(options.openers, target.worktreePath);
-  runRunners(options.runners, target.worktreePath);
 }
 
 async function resolveTicketFromMode(mode: CliMode, repoInfo: RepoInfo): Promise<string | null> {
@@ -64,4 +74,18 @@ async function resolveTicketFromMode(mode: CliMode, repoInfo: RepoInfo): Promise
   }
 
   return await selectTicketFromList(mode.kind, repoInfo);
+}
+
+function resolveRepoRoot(baseDir: string): string {
+  const gitCommonDirRaw = runCommand("git", ["rev-parse", "--git-common-dir"]);
+  const gitCommonDir = resolveGitPath(baseDir, gitCommonDirRaw);
+  return path.dirname(gitCommonDir);
+}
+
+function resolveGitPath(baseDir: string, gitPath: string): string {
+  if (path.isAbsolute(gitPath)) {
+    return path.normalize(gitPath);
+  }
+
+  return path.normalize(path.resolve(baseDir, gitPath));
 }

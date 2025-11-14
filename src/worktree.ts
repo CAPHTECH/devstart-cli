@@ -173,9 +173,9 @@ export function runRunners(runners: RunnerCommand[], worktreePath: string) {
 
   try {
     for (const runner of runners) {
-      const result = spawnSync(runner, [], { stdio: "inherit" });
+      const result = spawnSync(runner.command, runner.args, { stdio: "inherit" });
       if (result.status !== 0) {
-        throw new Error(`${runner} command failed.`);
+        throw new Error(`${runner.command} command failed.`);
       }
     }
   } finally {

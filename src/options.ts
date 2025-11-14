@@ -1,5 +1,7 @@
 import type { CliMode, CliOptions, EditorCommand, RunnerCommand } from "./types.js";
 
+type RunnerName = RunnerCommand["command"];
+
 export const USAGE = "Usage: devstart [options] (<issue|pr-number>|issues|prs)";
 
 export function buildHelpMessage(): string {
@@ -7,10 +9,16 @@ export function buildHelpMessage(): string {
 ${USAGE}
 
 Options:
-  --vsc       Open the worktree in vsc (default)
+  --vsc       Open the worktree in VS Code
   --cursor    Open the worktree in Cursor
-  --codex     Run the codex command inside the worktree
-  --claude    Run the claude command inside the worktree
+  --codex[=value]
+             Run the codex command inside the worktree (first argument optional)
+  --codex-arg <value>
+             Pass an extra argument to the codex command (repeatable)
+  --claude[=value]
+             Run the claude command inside the worktree (first argument optional)
+  --claude-arg <value>
+             Pass an extra argument to the claude command (repeatable)
   --in-place  Switch the current repo branch instead of creating a worktree
   --help,-h   Show this help text
 
@@ -24,11 +32,43 @@ Provide an issue or PR number. Issues create an issue/<number> branch, PRs use t
 
 export function parseArgs(args: string[]): CliOptions {
   const openers: EditorCommand[] = [];
-  const runners: RunnerCommand[] = [];
+  const runnerArgs: Record<RunnerName, string[]> = {
+    codex: [],
+    claude: [],
+  };
+  const runnerOrder: RunnerName[] = [];
   let mode: CliMode | null = null;
   let inPlace = false;
 
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === undefined) {
+      continue;
+    }
+
+    const consumeValue = (flag: string): string => {
+      if (i + 1 >= args.length) {
+        throw new Error(`${flag} requires a value.`);
+      }
+      const value = args[i + 1];
+      if (value === undefined) {
+        throw new Error(`${flag} requires a value.`);
+      }
+      i += 1;
+      return value;
+    };
+
+    const enableRunner = (name: RunnerName) => {
+      if (!runnerOrder.includes(name)) {
+        runnerOrder.push(name);
+      }
+    };
+
+    const addRunnerArg = (name: RunnerName, value: string) => {
+      runnerArgs[name].push(value);
+      enableRunner(name);
+    };
+
     if (arg === "--help" || arg === "-h") {
       throw new HelpRequested();
     }
@@ -43,13 +83,57 @@ export function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
-    if (arg === "--codex") {
-      addUnique(runners, "codex");
+    if (arg === "--codex" || arg.startsWith("--codex=")) {
+      enableRunner("codex");
+      if (arg.startsWith("--codex=")) {
+        const inlineValue = arg.slice("--codex=".length);
+        if (!inlineValue) {
+          throw new Error("--codex= requires a value.");
+        }
+        addRunnerArg("codex", inlineValue);
+      }
       continue;
     }
 
-    if (arg === "--claude") {
-      addUnique(runners, "claude");
+    if (arg === "--claude" || arg.startsWith("--claude=")) {
+      enableRunner("claude");
+      if (arg.startsWith("--claude=")) {
+        const inlineValue = arg.slice("--claude=".length);
+        if (!inlineValue) {
+          throw new Error("--claude= requires a value.");
+        }
+        addRunnerArg("claude", inlineValue);
+      }
+      continue;
+    }
+
+    if (arg === "--codex-arg") {
+      const value = consumeValue("--codex-arg");
+      addRunnerArg("codex", value);
+      continue;
+    }
+
+    if (arg.startsWith("--codex-arg=")) {
+      const value = arg.slice("--codex-arg=".length);
+      if (!value) {
+        throw new Error("--codex-arg requires a value.");
+      }
+      addRunnerArg("codex", value);
+      continue;
+    }
+
+    if (arg === "--claude-arg") {
+      const value = consumeValue("--claude-arg");
+      addRunnerArg("claude", value);
+      continue;
+    }
+
+    if (arg.startsWith("--claude-arg=")) {
+      const value = arg.slice("--claude-arg=".length);
+      if (!value) {
+        throw new Error("--claude-arg requires a value.");
+      }
+      addRunnerArg("claude", value);
       continue;
     }
 
@@ -82,9 +166,14 @@ export function parseArgs(args: string[]): CliOptions {
     throw new Error(USAGE);
   }
 
+  const runners: RunnerCommand[] = runnerOrder.map((name) => ({
+    command: name,
+    args: [...runnerArgs[name]],
+  }));
+
   return {
     mode,
-    openers: openers.length > 0 ? openers : ["code"],
+    openers,
     runners,
     inPlace,
   };
