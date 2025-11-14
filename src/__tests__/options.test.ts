@@ -8,12 +8,19 @@ describe("parseArgs", () => {
     expect(result.mode).toEqual({ kind: "ticket", ticket: "123" });
     expect(result.openers).toEqual(["code"]);
     expect(result.runners).toEqual([]);
+    expect(result.inPlace).toBe(false);
   });
 
   it("handles issues command with custom openers", () => {
     const result = parseArgs(["--cursor", "issues"]);
     expect(result.mode).toEqual({ kind: "issues" });
     expect(result.openers).toEqual(["cursor"]);
+    expect(result.inPlace).toBe(false);
+  });
+
+  it("sets in-place flag", () => {
+    const result = parseArgs(["--in-place", "123"]);
+    expect(result.inPlace).toBe(true);
   });
 
   it("throws on multiple positional arguments", () => {

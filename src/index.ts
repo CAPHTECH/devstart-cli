@@ -7,6 +7,7 @@ import { buildHelpMessage, parseArgs, HelpRequested } from "./options.js";
 import { getRepoInfo } from "./github.js";
 import { selectTicketFromList } from "./interactive.js";
 import {
+  ensureBranchInPlace,
   ensureParentDirectory,
   ensureWorktreeReady,
   openWorktree,
@@ -43,6 +44,13 @@ async function main() {
   }
 
   const target = resolveTarget(ticket, worktreesRoot);
+  if (options.inPlace) {
+    ensureBranchInPlace(target);
+    openWorktree(options.openers, repoRoot);
+    runRunners(options.runners, repoRoot);
+    return;
+  }
+
   ensureParentDirectory(target.worktreePath);
   ensureWorktreeReady(target);
 

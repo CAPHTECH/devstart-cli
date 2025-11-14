@@ -33,6 +33,7 @@ export type CliOptions = {
   mode: CliMode;
   openers: EditorCommand[];
   runners: RunnerCommand[];
+  inPlace: boolean;
 };
 
 export type RepoInfo = {

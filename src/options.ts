@@ -11,6 +11,7 @@ Options:
   --cursor    Open the worktree in Cursor
   --codex     Run the codex command inside the worktree
   --claude    Run the claude command inside the worktree
+  --in-place  Switch the current repo branch instead of creating a worktree
   --help,-h   Show this help text
 
 Commands:
@@ -25,6 +26,7 @@ export function parseArgs(args: string[]): CliOptions {
   const openers: EditorCommand[] = [];
   const runners: RunnerCommand[] = [];
   let mode: CliMode | null = null;
+  let inPlace = false;
 
   for (const arg of args) {
     if (arg === "--help" || arg === "-h") {
@@ -48,6 +50,11 @@ export function parseArgs(args: string[]): CliOptions {
 
     if (arg === "--claude") {
       addUnique(runners, "claude");
+      continue;
+    }
+
+    if (arg === "--in-place") {
+      inPlace = true;
       continue;
     }
 
@@ -79,6 +86,7 @@ export function parseArgs(args: string[]): CliOptions {
     mode,
     openers: openers.length > 0 ? openers : ["code"],
     runners,
+    inPlace,
   };
 }
 

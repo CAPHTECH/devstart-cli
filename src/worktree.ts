@@ -72,6 +72,16 @@ export function ensureWorktreeReady(target: WorktreeTarget) {
   }
 }
 
+export function ensureBranchInPlace(target: WorktreeTarget) {
+  if (target.kind === "issue") {
+    ensureIssueBranchExists(target);
+  } else {
+    ensurePrBranchExists(target);
+  }
+
+  switchToBranch(target.branch);
+}
+
 function createIssueWorktree(target: IssueTarget) {
   const branchExists = localBranchExists(target.branch);
   const args = ["worktree", "add", target.worktreePath];
@@ -93,6 +103,23 @@ function createPrWorktree(target: PrTarget) {
 
   const sourceRef = preparePrSourceRef(target);
   runGit(["worktree", "add", target.worktreePath, "-b", target.branch, sourceRef]);
+}
+
+function ensureIssueBranchExists(target: IssueTarget) {
+  if (localBranchExists(target.branch)) {
+    return;
+  }
+
+  runGit(["branch", target.branch, target.baseRef]);
+}
+
+function ensurePrBranchExists(target: PrTarget) {
+  if (localBranchExists(target.branch)) {
+    return;
+  }
+
+  const sourceRef = preparePrSourceRef(target);
+  runGit(["branch", target.branch, sourceRef]);
 }
 
 function preparePrSourceRef(target: PrTarget): string {
@@ -177,6 +204,10 @@ function tryGit(args: string[]): boolean {
   }
 
   return result.status === 0;
+}
+
+function switchToBranch(branch: string) {
+  runCommand("git", ["switch", branch], { stdio: "inherit" });
 }
 
 export function findExistingWorktree(targetPath: string): WorktreeInfo | null {
