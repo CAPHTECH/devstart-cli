@@ -1,47 +1,49 @@
 # Devstart CLI
 
-TypeScript製のCLIツールで、GitHub Issue/PRから作業ブランチやワークツリーを瞬時に用意し、任意のエディタ・エージェントを起動できます。`node` + `pnpm` さえあればローカルに環境を再現できます。
+Devstart CLI is a TypeScript tool that scaffolds working branches and git worktrees straight from GitHub Issues or PRs, then starts your preferred editor or automation runner. All you need locally is `node` + `pnpm`.
 
-## 主な機能
-- `devstart <issue|pr>` で `issue/<番号>` や PRヘッドブランチを自動作成
-- `devstart issues` / `devstart prs` による対話的なチケット選択 (`gh` CLI必須)
-- `<repo>.worktrees/` 配下に自動で git worktree を配置し、`--in-place` で既存リポのブランチ切替も可能
-- VS Code / Cursor の起動や、`codex`/`claude` コマンドへ任意引数を転送する Runner 連携
+> 日本語ドキュメントは `README.ja.md` を参照してください。
 
-## セットアップ
+## Key Features
+- `devstart <issue|pr>` automatically creates `issue/<number>` branches or reuses the PR head
+- `devstart issues` / `devstart prs` offers an interactive picker (requires the `gh` CLI)
+- Places git worktrees under `<repo>.worktrees/`, with `--in-place` to reuse the current clone
+- Launches VS Code or Cursor, and forwards custom arguments to `codex` / `claude` runners
+
+## Setup
 ```bash
 pnpm install
 ```
-- Node.js 18+ と pnpm 10.18 以上を推奨
-- `gh auth status` と `git worktree list` が成功する状態を前提とします
+- Recommend Node.js 18+ and pnpm 10.18+
+- Assumes `gh auth status` and `git worktree list` succeed on your machine
 
-## ビルドとテスト
+## Build & Test
 ```bash
 pnpm build   # TypeScript -> dist/
 pnpm test    # Vitest
-pnpm start -- --help  # 最新ビルドでCLIヘルプ確認
+pnpm start -- --help  # Inspect the CLI help with the latest build
 ```
-`pnpm build` で `dist/index.js` を生成してから `pnpm start` を実行してください。
+Always run `pnpm build` to emit `dist/index.js` before invoking `pnpm start`.
 
-## 使い方
+## Usage
 ```bash
 pnpm start -- --help
-# 例: Issueを選択してVS Codeを開く
+# Example: interactively pick an issue and open VS Code
 pnpm start -- issues --vsc
-# 例: 既存リポを使ってブランチ切替のみ
+# Example: switch branches in the existing repo without a worktree
 pnpm start -- 123 --in-place
-# 例: codex runnerへ引数を付けて実行
+# Example: run with codex runner and forward extra arguments
 pnpm start -- 456 --codex=--model=gpt-4 --codex-arg "--max-tokens=2000"
 ```
-主なオプション:
-- `--vsc`, `--cursor`: ワークツリーを該当エディタで開く
-- `--codex[=value]`, `--claude[=value]`: Runnerを有効化し最初の引数を指定
-- `--codex-arg <value>`, `--claude-arg <value>`: Runnerへ追加引数（複数回指定可）
-- `--in-place`: worktreeを作らず現在のリポでブランチ切替
+Common flags:
+- `--vsc`, `--cursor`: open the prepared worktree in the specified editor
+- `--codex[=value]`, `--claude[=value]`: enable runners and set their primary argument
+- `--codex-arg <value>`, `--claude-arg <value>`: pass additional runner arguments (repeatable)
+- `--in-place`: skip creating a worktree and only switch the current repo branch
 
-## 開発フロー
-1. `pnpm build && pnpm test`
-2. ワークツリーで修正後、`devstart` を再実行してランナーやエディタを開く
-3. Conventional Commits (`feat: ...`, `fix: ...`) に従ってコミット
+## Development Flow
+1. Run `pnpm build && pnpm test`
+2. Apply your changes inside the worktree, then rerun `devstart` to relaunch runners or editors
+3. Commit with Conventional Commit prefixes (e.g., `feat: ...`, `fix: ...`)
 
-詳細なコントリビューション手順は `AGENTS.md` を参照してください。
+See `AGENTS.md` for the full contribution guide.
