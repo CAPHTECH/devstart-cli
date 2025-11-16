@@ -21,10 +21,11 @@ export type WorktreeInfo = {
 };
 
 export type EditorCommand = "code" | "cursor";
-export type RunnerName = "codex" | "claude";
+export type RunnerName = "codex" | "claude" | "shell";
 export type RunnerCommand = {
   command: RunnerName;
   args: string[];
+  executable?: string;
 };
 export type ListType = "issues" | "prs";
 

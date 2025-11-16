@@ -35,6 +35,16 @@ describe("parseArgs", () => {
     ]);
   });
 
+  it("enables shell runner and forwards args", () => {
+    const result = parseArgs(["--shell", "--shell-arg", "-l", "123"]);
+    expect(result.runners).toEqual([{ command: "shell", args: ["-l"] }]);
+  });
+
+  it("accepts inline shell executable value", () => {
+    const result = parseArgs(["--shell=/bin/zsh", "prs"]);
+    expect(result.runners).toEqual([{ command: "shell", args: [], executable: "/bin/zsh" }]);
+  });
+
   it("accepts inline claude argument", () => {
     const result = parseArgs(["--claude=--model=opus", "issues"]);
     expect(result.runners).toEqual([{ command: "claude", args: ["--model=opus"] }]);

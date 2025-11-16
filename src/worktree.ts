@@ -14,6 +14,27 @@ import type {
 } from "./types.js";
 
 export function resolveTarget(ticketNumber: string, worktreesRoot: string): WorktreeTarget {
+  const prInfo = tryRunGhJson<{ headRefName: string; isCrossRepository: boolean }>([
+    "pr",
+    "view",
+    ticketNumber,
+    "--json",
+    "headRefName",
+    "isCrossRepository",
+  ]);
+
+  if (prInfo) {
+    const branch = prInfo.headRefName;
+    const worktreePath = path.join(worktreesRoot, "pr", branch);
+    return {
+      kind: "pr",
+      branch,
+      worktreePath,
+      number: ticketNumber,
+      isCrossRepository: prInfo.isCrossRepository,
+    };
+  }
+
   const issueInfo = tryRunGhJson<{ number: number }>([
     "issue",
     "view",
@@ -33,28 +54,7 @@ export function resolveTarget(ticketNumber: string, worktreesRoot: string): Work
     };
   }
 
-  const prInfo = tryRunGhJson<{ headRefName: string; isCrossRepository: boolean }>([
-    "pr",
-    "view",
-    ticketNumber,
-    "--json",
-    "headRefName",
-    "isCrossRepository",
-  ]);
-
-  if (!prInfo) {
-    throw new Error(`Ticket ${ticketNumber} not found as issue or PR.`);
-  }
-
-  const branch = prInfo.headRefName;
-  const worktreePath = path.join(worktreesRoot, "pr", branch);
-  return {
-    kind: "pr",
-    branch,
-    worktreePath,
-    number: ticketNumber,
-    isCrossRepository: prInfo.isCrossRepository,
-  };
+  throw new Error(`Ticket ${ticketNumber} not found as issue or PR.`);
 }
 
 export function ensureWorktreeReady(target: WorktreeTarget) {
@@ -173,6 +173,11 @@ export function runRunners(runners: RunnerCommand[], worktreePath: string) {
 
   try {
     for (const runner of runners) {
+      if (runner.command === "shell") {
+        runShellRunner(runner);
+        continue;
+      }
+
       const result = spawnSync(runner.command, runner.args, { stdio: "inherit" });
       if (result.status !== 0) {
         throw new Error(`${runner.command} command failed.`);
@@ -208,6 +213,15 @@ function tryGit(args: string[]): boolean {
 
 function switchToBranch(branch: string) {
   runCommand("git", ["switch", branch], { stdio: "inherit" });
+}
+
+function runShellRunner(runner: RunnerCommand & { command: "shell" }) {
+  const shellExecutable =
+    runner.executable ?? process.env.DEVSTART_SHELL ?? process.env.SHELL ?? "/bin/bash";
+  const result = spawnSync(shellExecutable, runner.args, { stdio: "inherit" });
+  if (result.status !== 0) {
+    throw new Error(`${shellExecutable} command failed.`);
+  }
 }
 
 export function findExistingWorktree(targetPath: string): WorktreeInfo | null {

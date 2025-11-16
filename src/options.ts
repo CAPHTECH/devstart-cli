@@ -19,6 +19,10 @@ Options:
              Run the claude command inside the worktree (first argument optional)
   --claude-arg <value>
              Pass an extra argument to the claude command (repeatable)
+  --shell[=path]
+             Start an interactive shell inside the worktree (defaults to $DEVSTART_SHELL, $SHELL, or /bin/bash)
+  --shell-arg <value>
+             Pass an extra argument to the shell command (repeatable)
   --in-place  Switch the current repo branch instead of creating a worktree
   --help,-h   Show this help text
 
@@ -35,8 +39,10 @@ export function parseArgs(args: string[]): CliOptions {
   const runnerArgs: Record<RunnerName, string[]> = {
     codex: [],
     claude: [],
+    shell: [],
   };
   const runnerOrder: RunnerName[] = [];
+  const runnerExecutables: Partial<Record<RunnerName, string>> = {};
   let mode: CliMode | null = null;
   let inPlace = false;
 
@@ -66,6 +72,11 @@ export function parseArgs(args: string[]): CliOptions {
 
     const addRunnerArg = (name: RunnerName, value: string) => {
       runnerArgs[name].push(value);
+      enableRunner(name);
+    };
+
+    const setRunnerExecutable = (name: RunnerName, value: string) => {
+      runnerExecutables[name] = value;
       enableRunner(name);
     };
 
@@ -107,6 +118,18 @@ export function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--shell" || arg.startsWith("--shell=")) {
+      enableRunner("shell");
+      if (arg.startsWith("--shell=")) {
+        const inlineValue = arg.slice("--shell=".length);
+        if (!inlineValue) {
+          throw new Error("--shell= requires a value.");
+        }
+        setRunnerExecutable("shell", inlineValue);
+      }
+      continue;
+    }
+
     if (arg === "--codex-arg") {
       const value = consumeValue("--codex-arg");
       addRunnerArg("codex", value);
@@ -134,6 +157,21 @@ export function parseArgs(args: string[]): CliOptions {
         throw new Error("--claude-arg requires a value.");
       }
       addRunnerArg("claude", value);
+      continue;
+    }
+
+    if (arg === "--shell-arg") {
+      const value = consumeValue("--shell-arg");
+      addRunnerArg("shell", value);
+      continue;
+    }
+
+    if (arg.startsWith("--shell-arg=")) {
+      const value = arg.slice("--shell-arg=".length);
+      if (!value) {
+        throw new Error("--shell-arg requires a value.");
+      }
+      addRunnerArg("shell", value);
       continue;
     }
 
@@ -166,10 +204,14 @@ export function parseArgs(args: string[]): CliOptions {
     throw new Error(USAGE);
   }
 
-  const runners: RunnerCommand[] = runnerOrder.map((name) => ({
-    command: name,
-    args: [...runnerArgs[name]],
-  }));
+  const runners: RunnerCommand[] = runnerOrder.map((name) => {
+    const argsCopy = [...runnerArgs[name]];
+    const executable = runnerExecutables[name];
+    if (executable) {
+      return { command: name, args: argsCopy, executable };
+    }
+    return { command: name, args: argsCopy };
+  });
 
   return {
     mode,

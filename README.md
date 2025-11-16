@@ -39,6 +39,7 @@ Common flags:
 - `--vsc`, `--cursor`: open the prepared worktree in the specified editor
 - `--codex[=value]`, `--claude[=value]`: enable runners and set their primary argument
 - `--codex-arg <value>`, `--claude-arg <value>`: pass additional runner arguments (repeatable)
+- `--shell[=path]`, `--shell-arg <value>`: launch an interactive shell inside the worktree (defaults to `$DEVSTART_SHELL`, `$SHELL`, or `/bin/bash`)
 - `--in-place`: skip creating a worktree and only switch the current repo branch
 
 ## Development Flow

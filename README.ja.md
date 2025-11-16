@@ -37,6 +37,7 @@ pnpm start -- 456 --codex=--model=gpt-4 --codex-arg "--max-tokens=2000"
 - `--vsc`, `--cursor`: ワークツリーを該当エディタで開く
 - `--codex[=value]`, `--claude[=value]`: Runnerを有効化し最初の引数を指定
 - `--codex-arg <value>`, `--claude-arg <value>`: Runnerへ追加引数（複数回指定可）
+- `--shell[=path]`, `--shell-arg <value>`: ワークツリー上でインタラクティブシェルを開く（`$DEVSTART_SHELL`→`$SHELL`→`/bin/bash`の順で決定）
 - `--in-place`: worktreeを作らず現在のリポでブランチ切替
 
 ## 開発フロー
