@@ -215,7 +215,10 @@ function switchToBranch(branch: string) {
   runCommand("git", ["switch", branch], { stdio: "inherit" });
 }
 
-function runShellRunner(runner: RunnerCommand & { command: "shell" }) {
+function runShellRunner(runner: RunnerCommand) {
+  if (runner.command !== "shell") {
+    throw new Error("runShellRunner requires a shell runner.");
+  }
   const shellExecutable =
     runner.executable ?? process.env.DEVSTART_SHELL ?? process.env.SHELL ?? "/bin/bash";
   const result = spawnSync(shellExecutable, runner.args, { stdio: "inherit" });
