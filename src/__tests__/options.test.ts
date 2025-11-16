@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { HelpRequested, parseArgs } from "../options.js";
+import { HelpRequested, VersionRequested, parseArgs } from "../options.js";
 
 describe("parseArgs", () => {
   it("parses ticket number without implicit opener", () => {
@@ -67,5 +67,9 @@ describe("parseArgs", () => {
 
   it("signals help request", () => {
     expect(() => parseArgs(["--help"])).toThrow(HelpRequested);
+  });
+
+  it("signals version request", () => {
+    expect(() => parseArgs(["--version"])).toThrow(VersionRequested);
   });
 });

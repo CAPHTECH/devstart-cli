@@ -3,7 +3,7 @@
 import path from "node:path";
 
 import { runCommand } from "./commands.js";
-import { buildHelpMessage, parseArgs, HelpRequested } from "./options.js";
+import { buildHelpMessage, parseArgs, HelpRequested, VersionRequested } from "./options.js";
 import { getRepoInfo } from "./github.js";
 import { selectTicketFromList } from "./interactive.js";
 import {
@@ -15,10 +15,16 @@ import {
   runRunners,
 } from "./worktree.js";
 import type { CliMode, RepoInfo } from "./types.js";
+import { getCliVersion } from "./version.js";
 
 void main().catch((error) => {
   if (error instanceof HelpRequested) {
     console.log(buildHelpMessage());
+    return;
+  }
+
+  if (error instanceof VersionRequested) {
+    console.log(getCliVersion());
     return;
   }
 

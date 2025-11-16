@@ -24,6 +24,8 @@ Options:
   --shell-arg <value>
              Pass an extra argument to the shell command (repeatable)
   --in-place  Switch the current repo branch instead of creating a worktree
+  --version,-V
+             Show the CLI version
   --help,-h   Show this help text
 
 Commands:
@@ -82,6 +84,10 @@ export function parseArgs(args: string[]): CliOptions {
 
     if (arg === "--help" || arg === "-h") {
       throw new HelpRequested();
+    }
+
+    if (arg === "--version" || arg === "-V") {
+      throw new VersionRequested();
     }
 
     if (arg === "--vsc" || arg === "--code") {
@@ -224,6 +230,12 @@ export function parseArgs(args: string[]): CliOptions {
 export class HelpRequested extends Error {
   constructor() {
     super("help");
+  }
+}
+
+export class VersionRequested extends Error {
+  constructor() {
+    super("version");
   }
 }
 
